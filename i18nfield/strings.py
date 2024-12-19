@@ -31,7 +31,8 @@ class LazyI18nString(UserDict):
             else:
                 dict_data = data
             if not isinstance(dict_data, dict):
-                raise ValueError(f"Data must be a dictionary or None: {data} {type[data]}")
+                raise ValueError(f"Data must be a dictionary or None: {dict_data} {type[dict_data]}")
+            print(f"init dict with: {dict_data}")
             super().__init__(dict_data)
 
             
