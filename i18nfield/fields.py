@@ -37,7 +37,7 @@ class I18nFieldMixin:
         return super().formfield(**defaults)
     
 
-class I18nCharFieldMixin(I18nFieldMixin, models.CharField):
+class I18nCharFieldMixin(I18nFieldMixin):
 
     def get_prep_lookup(self, lookup_type, value):  # NOQA
         raise TypeError('Lookups on i18n strings are currently not supported.')
