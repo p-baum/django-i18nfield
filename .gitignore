@@ -3,6 +3,7 @@ build/
 dist/
 *.egg-info
 env
+.venv
 .idea/
 *.sqlite3
 .cache
@@ -10,4 +11,4 @@ env
 htmlcov/
 *.pyc
 .coverage
-
+*.ipynb

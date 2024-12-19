@@ -20,12 +20,17 @@ class LazyI18nString(UserDict):
             If this is a string that can be parsed as JSON, it will be parsed and used as such a dictionary.
             If this is anything else, it will be cast to a string and used for all languages.
         """
+        
         if isinstance(data, str) and data is not None:
             try:
-                j = json.loads(data)
-                super().__init__(j)
+                dict_data = json.loads(data)
             except ValueError:
-                super().__init__(_naive=data)
+                dict_data = {"_naive": data}
+        else:
+            dict_data = data
+        super().__init__(dict_data)
+
+        
 
 
     def __str__(self) -> str:
