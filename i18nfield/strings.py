@@ -1,12 +1,13 @@
 from typing import Dict, Optional, Union
 
 import json
+from collections import UserDict
 from django.conf import settings
 from django.utils import translation
 from django.utils.translation import gettext, override
 
 
-class LazyI18nString:
+class LazyI18nString(UserDict):
     """
     This represents an internationalized string that is/was/will be stored in the database.
     """
@@ -19,14 +20,13 @@ class LazyI18nString:
             If this is a string that can be parsed as JSON, it will be parsed and used as such a dictionary.
             If this is anything else, it will be cast to a string and used for all languages.
         """
-        self.data = data
-        if isinstance(self.data, str) and self.data is not None:
+        if isinstance(data, str) and data is not None:
             try:
-                j = json.loads(self.data)
+                j = json.loads(data)
+                super().__init__(j)
             except ValueError:
-                pass
-            else:
-                self.data = j
+                super().__init__(_naive=data)
+
 
     def __str__(self) -> str:
         """
@@ -57,34 +57,30 @@ class LazyI18nString:
             or region like ``de-AT``, exact matches will be used preferably, but if only
             a ``de`` or ``de-AT`` translation exists, this might be returned as well.
         """
-        if self.data is None:
+        if not self.data:
             return ""
 
-        if isinstance(self.data, dict):
-            firstpart = lng.split('-')[0]
-            similar = [
-                loc for loc in self.data.keys()
-                if (loc.startswith(firstpart + "-") or firstpart == loc) and loc != lng
-            ]
-            if self.data.get(lng):
-                return self.data[lng]
-            elif self.data.get(firstpart):
-                return self.data[firstpart]
-            elif similar and any([self.data.get(s) for s in similar]):
-                for s in similar:
-                    if self.data.get(s):
-                        return self.data.get(s)
-            elif self.data.get(settings.LANGUAGE_CODE):
-                return self.data[settings.LANGUAGE_CODE]
-            else:
-                filled = [f for f in self.data.values() if f]
-                if filled:
-                    return filled[0]
-                else:
-                    return ""
+        firstpart = lng.split('-')[0]
+        similar = [
+            loc for loc in self.data.keys()
+            if (loc != "_naive" and loc.startswith(firstpart + "-") or firstpart == loc) and loc != lng
+        ]
+        if self.data.get(lng):
+            return self.data[lng]
+        elif self.data.get(firstpart):
+            return self.data[firstpart]
+        elif similar and any([self.data.get(s) for s in similar]):
+            for s in similar:
+                if self.data.get(s):
+                    return self.data.get(s)
+        elif self.data.get(settings.LANGUAGE_CODE):
+            return self.data[settings.LANGUAGE_CODE]
         else:
-            with override(lng):
-                return str(self.data)
+            filled = [f for f in self.data.values() if f]
+            if filled:
+                return filled[0]
+            else:
+                return ""
 
     def map(self, f):
         """
