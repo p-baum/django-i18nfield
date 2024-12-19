@@ -27,13 +27,6 @@ class I18nFieldMixin:
             return json.dumps({lng: value[lng] for lng, lngname in settings.LANGUAGES if value[lng]}, sort_keys=True)
         return value
 
-    if django.VERSION < (2,):
-        def from_db_value(self, value, expression, connection, context):
-            return LazyI18nString(value)
-    else:
-        def from_db_value(self, value, expression, connection):
-            return LazyI18nString(value)
-
     def value_to_string(self, obj):
         value = self.value_from_object(obj)
         return self.get_prep_value(value)
@@ -42,9 +35,22 @@ class I18nFieldMixin:
         defaults = {'form_class': self.form_class, 'widget': self.widget}
         defaults.update(kwargs)
         return super().formfield(**defaults)
+    
+
+class I18nCharFieldMixin(I18nFieldMixin, models.CharField):
+
+    def get_prep_lookup(self, lookup_type, value):  # NOQA
+        raise TypeError('Lookups on i18n strings are currently not supported.')
+    
+    if django.VERSION < (2,):
+        def from_db_value(self, value, expression, connection, context):
+            return LazyI18nString(value)
+    else:
+        def from_db_value(self, value, expression, connection):
+            return LazyI18nString(value)
 
 
-class I18nCharField(I18nFieldMixin, models.TextField):
+class I18nCharField(I18nCharFieldMixin, models.TextField):
     """
     A CharField which takes internationalized data. Internally, a TextField dabase
     field is used to store JSON. If you interact with this field, you will work
@@ -52,19 +58,17 @@ class I18nCharField(I18nFieldMixin, models.TextField):
     """
     widget = I18nTextInput
 
-    def get_prep_lookup(self, lookup_type, value):  # NOQA
-        raise TypeError('Lookups on i18n strings are currently not supported.')
 
-
-class I18nTextField(I18nFieldMixin, models.TextField):
+class I18nTextField(I18nCharFieldMixin, models.TextField):
     """
     Like I18nCharField, but for TextFields.
     """
     widget = I18nTextarea
 
-    def get_prep_lookup(self, lookup_type, value):  # NOQA
-        raise TypeError('Lookups on i18n strings are currently not supported.')
-
 
 class I18nJSONField(I18nFieldMixin, models.JSONField):
     widget = I18nTextInput
+
+    def from_db_value(self, value, expression, connection):
+        value = super().from_db_value(value, expression, connection)
+        return LazyI18nString(value)
